@@ -1,0 +1,290 @@
+import React, { useState } from "react";
+import { base44 } from "@/api/base44Client";
+import { useQuery } from "@tanstack/react-query";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Link, useSearchParams, useNavigate } from "react-router-dom";
+import { createPageUrl } from "@/utils";
+import {
+  ArrowLeft, GraduationCap, Target, Zap, Trophy,
+  BookOpen, CheckCircle2, Globe, Award
+} from "lucide-react";
+import { motion } from "framer-motion";
+
+export default function TopicSelect() {
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const topicId = searchParams.get("topicId");
+  const [selectedDifficulty, setSelectedDifficulty] = useState("medium");
+  const [language, setLanguage] = useState("sk");
+
+  const { data: topic } = useQuery({
+    queryKey: ['topic', topicId],
+    queryFn: async () => {
+      const topics = await base44.entities.Topic.list();
+      return topics.find(t => t.id === topicId);
+    },
+  });
+
+  const { data: subject } = useQuery({
+    queryKey: ['subject', topic?.subject_id],
+    queryFn: async () => {
+      if (!topic?.subject_id) return null;
+      const subjects = await base44.entities.Subject.list();
+      return subjects.find(s => s.id === topic.subject_id);
+    },
+    enabled: !!topic?.subject_id,
+  });
+
+  const difficulties = [
+    {
+      id: "easy",
+      name: "Ľahké",
+      name_en: "Easy",
+      questions: 10,
+      icon: Target,
+      color: "from-green-400 to-green-600",
+      description: "Ideálne na začiatok",
+      xp: "+50 XP"
+    },
+    {
+      id: "medium",
+      name: "Stredné",
+      name_en: "Medium",
+      questions: 20,
+      icon: Zap,
+      color: "from-blue-400 to-blue-600",
+      description: "Vyváženná náročnosť",
+      xp: "+200 XP"
+    },
+    {
+      id: "hard",
+      name: "Ťažké",
+      name_en: "Hard",
+      questions: 40,
+      icon: Trophy,
+      color: "from-purple-400 to-purple-600",
+      description: "Pre pokročilých",
+      xp: "+600 XP"
+    },
+    {
+      id: "maturita",
+      name: "Maturitný test",
+      name_en: "Exam Test",
+      questions: 62,
+      icon: Award,
+      color: "from-yellow-400 to-orange-600",
+      description: "Reálna maturita 2017-2024",
+      xp: "+1000 XP",
+      isMaturita: true
+    }
+  ];
+
+  const handleStartQuiz = () => {
+    if (selectedDifficulty === "maturita") {
+      navigate(createPageUrl(`QuizMode?topicId=${topicId}&difficulty=medium&maturita=true`));
+    } else {
+      navigate(createPageUrl(`QuizMode?topicId=${topicId}&difficulty=${selectedDifficulty}`));
+    }
+  };
+
+  if (!topic || !subject) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white flex items-center justify-center">
+        <div className="animate-spin w-12 h-12 border-4 border-purple-600 border-t-transparent rounded-full" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
+      {/* Header */}
+      <div className="bg-white/80 backdrop-blur-xl border-b border-slate-200/50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <Button variant="ghost" size="icon" className="rounded-xl" onClick={() => navigate(createPageUrl(`SubjectDetail?id=${subject.id}`))}>
+              <ArrowLeft className="w-5 h-5" />
+            </Button>
+            <div className="flex items-center gap-2">
+              <div 
+                className="w-8 h-8 sm:w-10 sm:h-10 rounded-2xl flex items-center justify-center"
+                style={{ background: `linear-gradient(to bottom right, ${subject.color}, ${subject.color}dd)` }}
+              >
+                <GraduationCap className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+              </div>
+              <span className="text-lg sm:text-xl font-bold">
+                {language === "sk" ? topic.name_sk : topic.name_en}
+              </span>
+            </div>
+          </div>
+          
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setLanguage(language === "sk" ? "en" : "sk")}
+            className="rounded-full"
+          >
+            <Globe className="w-4 h-4 mr-2" />
+            {language.toUpperCase()}
+          </Button>
+        </div>
+      </div>
+
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
+        {/* Topic Info */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          <Card className="p-6 sm:p-8 rounded-3xl border-0 shadow-xl mb-8 bg-gradient-to-br from-white to-slate-50">
+            <div className="flex items-start gap-4 sm:gap-6">
+              <div 
+                className="w-12 h-12 sm:w-16 sm:h-16 rounded-2xl flex items-center justify-center flex-shrink-0"
+                style={{ background: `linear-gradient(to bottom right, ${subject.color}, ${subject.color}dd)` }}
+              >
+                <BookOpen className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
+              </div>
+              <div className="flex-1">
+                <h1 className="text-2xl sm:text-3xl font-bold mb-2">
+                  {language === "sk" ? topic.name_sk : topic.name_en}
+                </h1>
+                <p className="text-slate-600 text-base sm:text-lg mb-4">
+                  {language === "sk" ? topic.description_sk : topic.description_en}
+                </p>
+                <Badge className={`${
+                  topic.difficulty === "easy" ? "bg-green-100 text-green-700 border-green-200" :
+                  topic.difficulty === "medium" ? "bg-yellow-100 text-yellow-700 border-yellow-200" :
+                  "bg-red-100 text-red-700 border-red-200"
+                } border text-xs sm:text-sm`}>
+                  {topic.difficulty === "easy" ? "Ľahká téma" : 
+                   topic.difficulty === "medium" ? "Stredná téma" : "Ťažká téma"}
+                </Badge>
+              </div>
+            </div>
+          </Card>
+        </motion.div>
+
+        {/* Mode Selection */}
+        <div className="mb-8">
+          <h2 className="text-xl sm:text-2xl font-bold mb-6">Vyber režim</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+            {difficulties.map((diff, i) => {
+              const isSelected = selectedDifficulty === diff.id;
+              
+              return (
+                <motion.div
+                  key={diff.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.1 }}
+                  whileHover={{ scale: 1.05, y: -5 }}
+                  whileTap={{ scale: 0.95 }}
+                  className={diff.isMaturita ? "sm:col-span-2" : ""}
+                >
+                  <Card
+                    onClick={() => setSelectedDifficulty(diff.id)}
+                    className={`p-4 sm:p-6 rounded-3xl cursor-pointer transition-all ${
+                      isSelected 
+                        ? "border-2 border-purple-500 shadow-xl bg-purple-50" 
+                        : "border-2 border-transparent shadow-lg hover:shadow-xl"
+                    } ${diff.isMaturita ? "bg-gradient-to-br from-yellow-50 to-orange-50" : ""}`}
+                  >
+                    <div className="flex items-start gap-4">
+                      <div className={`w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-br ${diff.color} flex items-center justify-center flex-shrink-0`}>
+                        <diff.icon className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
+                      </div>
+                      
+                      <div className="flex-1">
+                        <h3 className="text-lg sm:text-xl font-bold mb-2">
+                          {language === "sk" ? diff.name : diff.name_en}
+                        </h3>
+                        
+                        <p className="text-slate-600 mb-4 text-sm sm:text-base">{diff.description}</p>
+                        
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2 text-xs sm:text-sm">
+                            <CheckCircle2 className="w-4 h-4 text-purple-600" />
+                            <span>{diff.questions} otázok</span>
+                          </div>
+                          <div className="flex items-center gap-2 text-xs sm:text-sm">
+                            <CheckCircle2 className="w-4 h-4 text-purple-600" />
+                            <span>{diff.xp}</span>
+                          </div>
+                          {diff.isMaturita && (
+                            <div className="flex items-center gap-2 text-xs sm:text-sm">
+                              <CheckCircle2 className="w-4 h-4 text-purple-600" />
+                              <span>Bodové hodnotenie 24/62</span>
+                            </div>
+                          )}
+                        </div>
+
+                        {isSelected && (
+                          <motion.div
+                            initial={{ scale: 0 }}
+                            animate={{ scale: 1 }}
+                            className="mt-4"
+                          >
+                            <Badge className="bg-purple-600 text-white border-0">
+                              Vybrané ✓
+                            </Badge>
+                          </motion.div>
+                        )}
+                      </div>
+                    </div>
+                  </Card>
+                </motion.div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Study Tips */}
+        <Card className="p-4 sm:p-6 rounded-3xl border-0 shadow-xl bg-gradient-to-br from-blue-50 to-purple-50 mb-8">
+          <h3 className="font-bold text-base sm:text-lg mb-3 flex items-center gap-2">
+            <Zap className="w-5 h-5 text-purple-600" />
+            Tipy pred testom
+          </h3>
+          <ul className="space-y-2 text-sm sm:text-base text-slate-700">
+            <li className="flex items-start gap-2">
+              <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+              <span>Uisti sa, že si prečítal celú tému pred testom</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+              <span>Skús najprv ľahkú obtiažnosť a postupne zvyšuj náročnosť</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+              <span>Po každej otázke si prečítaj vysvetlenie</span>
+            </li>
+            {selectedDifficulty === "maturita" && (
+              <li className="flex items-start gap-2">
+                <CheckCircle2 className="w-5 h-5 text-orange-600 flex-shrink-0 mt-0.5" />
+                <span className="font-bold text-orange-900">Maturitný test obsahuje reálne otázky z rokov 2017-2024 s bodovým hodnotením!</span>
+              </li>
+            )}
+          </ul>
+        </Card>
+
+        {/* Start Button */}
+        <motion.div
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+        >
+          <Button
+            onClick={handleStartQuiz}
+            className={`w-full h-14 sm:h-16 rounded-full ${
+              selectedDifficulty === "maturita" 
+                ? "bg-gradient-to-r from-yellow-500 to-orange-600 hover:from-yellow-600 hover:to-orange-700"
+                : "bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
+            } text-lg sm:text-xl font-bold shadow-xl`}
+          >
+            {selectedDifficulty === "maturita" ? <Award className="w-5 h-5 sm:w-6 sm:h-6 mr-2" /> : <Trophy className="w-5 h-5 sm:w-6 sm:h-6 mr-2" />}
+            {selectedDifficulty === "maturita" ? "Spustiť maturitný test" : "Spustiť test"}
+          </Button>
+        </motion.div>
+      </div>
+    </div>
+  );
+}
