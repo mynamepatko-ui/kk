@@ -1,0 +1,819 @@
+
+import React, { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Link } from "react-router-dom";
+import { createPageUrl } from "@/utils";
+import { base44 } from "@/api/base44Client";
+import { 
+  BookOpen, Brain, Trophy, Zap, CheckCircle2, 
+  Globe, GraduationCap, TrendingUp, Award, Target,
+  Sparkles, ChevronRight, Play, Menu, X, MessageCircle,
+  CreditCard, Shield, Clock, Users, BarChart, Flame
+} from "lucide-react";
+import { motion, useScroll, useTransform } from "framer-motion";
+
+export default function Home() {
+  const [language, setLanguage] = useState("sk");
+  const [scrolled, setScrolled] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const { scrollYProgress } = useScroll();
+  const blur = useTransform(scrollYProgress, [0, 0.5], [0, 10]);
+
+  useEffect(() => {
+    const handleScroll = () => setScrolled(window.scrollY > 20);
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const authed = await base44.auth.isAuthenticated();
+        setIsAuthenticated(authed);
+      } catch (error) {
+        setIsAuthenticated(false);
+      }
+    };
+    checkAuth();
+  }, []);
+
+  const handleLogin = () => {
+    base44.auth.redirectToLogin(window.location.origin + createPageUrl("Dashboard"));
+  };
+
+  const t = {
+    sk: {
+      hero_title: "Priprav sa na maturitu",
+      hero_title_highlight: "jednoducho",
+      hero_subtitle: "Všetky témy, quizy a pokroky na jednom mieste. Tvoj osobný asistent na ceste k úspešnej maturite.",
+      cta_free: "Vyskúšaj zadarmo",
+      cta_premium: "Získať Premium",
+      cta_login: "Prihlásiť sa",
+      menu_dashboard: "Dashboard",
+      menu_subjects: "Predmety",
+      menu_pricing: "Cenník",
+      menu_support: "Podpora",
+      menu_login: "Prihlásiť sa",
+      menu_free_mode: "Free Mode",
+      feature1_title: "Personalizované učenie s AI",
+      feature1_desc: "Náš AI asistent pozná tvoje slabé stránky a odporúča ti presne to, čo potrebuješ zopakovať. Učíš sa efektívne, nie náhodne.",
+      feature2_title: "Tisíce maturitných otázok",
+      feature2_desc: "Reálne otázky z minulých maturít (2017-2024), pokrývajúce všetky témy. Priprav sa na to, čo ťa naozaj čaká.",
+      feature3_title: "Gamifikácia & Motivácia",
+      feature3_desc: "XP body, denné série, odznaky a rebríčky. Učenie je zábavné a vidíš svoj pokrok v reálnom čase.",
+      how_title: "Ako to funguje?",
+      step1: "Vyber predmet",
+      step1_desc: "Zo širokej ponuky maturitných predmetov",
+      step2: "Uč sa témami",
+      step2_desc: "Postupuj vlastným tempom cez témy",
+      step3: "Testuj sa",
+      step3_desc: "Precvičuj pomocou interaktívnych kvízov",
+      step4: "Získavaj XP",
+      step4_desc: "Sleduj progres a motivuj sa odmenami",
+      features_title: "Inteligentné funkcie",
+      features_subtitle: "Všetko, čo potrebuješ na úspech",
+      feature1: "Sledovanie pokroku",
+      feature1_desc: "Vidíš presne, kde sa nachádzaš a čoťa ešte čaká",
+      feature2: "Adaptívne učenie",
+      feature2_desc: "Systém ti odporúča témy, ktoré potrebuješ opakovať",
+      feature3: "Gamifikácia",
+      feature3_desc: "XP body, odznaky a denné série ťa udržia motivovaného",
+      feature4: "Vlastné quizy",
+      feature4_desc: "Vytvor si quiz len z tém, ktoré potrebuješ",
+      subjects_title: "Predmety",
+      subjects_subtitle: "Všetko potrebné pre tvoju maturitu",
+      gamification_title: "Učenie ako hra",
+      gamification_subtitle: "Získavaj body, odznaky a udržuj si streak",
+      pricing_title: "Cenové plány",
+      pricing_subtitle: "Vyber si plán, ktorý ti vyhovuje",
+      free: "Zadarmo",
+      free_desc: "Základný prístup na začiatok",
+      free_feature1: "5 predmetov",
+      free_feature2: "Základné témy",
+      free_feature3: "3 quizy denne",
+      free_feature4: "Obmedzený progres",
+      monthly: "Mesačne",
+      monthly_feature1: "Všetky predmety",
+      monthly_feature2: "Všetky témy a quizy",
+      monthly_feature3: "Neobmedzené quizy",
+      monthly_feature4: "Plný progres tracking",
+      monthly_feature5: "Adaptívne učenie",
+      monthly_feature6: "Vlastné quizy",
+      lifetime: "Doživotne",
+      lifetime_badge: "Najvýhodnejšie",
+      lifetime_feature1: "Všetko z Premium",
+      lifetime_feature2: "Doživotný prístup",
+      lifetime_feature3: "Budúce funkcie zdarma",
+      lifetime_feature4: "Prioritná podpora",
+      lifetime_feature5: "Offline režim",
+      lifetime_feature6: "Export poznámok",
+      testimonials_title: "Čo hovoria študenti",
+      final_cta: "Začni sa pripravovať už dnes",
+      final_cta_desc: "Pripoj sa k tisíckam študentov, ktorí už zvládli maturitu s 4ty",
+      footer_copyright: "© 2025 4ty. Všetky práva vyhradené.",
+      topics: "tém",
+    },
+    en: {
+      hero_title: "Prepare for your maturita",
+      hero_title_highlight: "simply",
+      hero_subtitle: "All topics, quizzes and progress in one place. Your personal assistant on the journey to successful exams.",
+      cta_free: "Try for free",
+      cta_premium: "Get Premium",
+      cta_login: "Log in",
+      menu_dashboard: "Dashboard",
+      menu_subjects: "Subjects",
+      menu_pricing: "Pricing",
+      menu_support: "Support",
+      menu_login: "Log in",
+      menu_free_mode: "Free Mode",
+      feature1_title: "Personalized AI Learning",
+      feature1_desc: "Our AI assistant knows your weak points and recommends exactly what you need to review. Learn efficiently, not randomly.",
+      feature2_title: "Thousands of Exam Questions",
+      feature2_desc: "Real questions from past exams (2017-2024), covering all topics. Prepare for what really awaits you.",
+      feature3_title: "Gamification & Motivation",
+      feature3_desc: "XP points, daily streaks, badges and leaderboards. Learning is fun and you see your progress in real time.",
+      how_title: "How does it work?",
+      step1: "Choose a subject",
+      step1_desc: "From a wide range of exam subjects",
+      step2: "Learn by topics",
+      step2_desc: "Progress at your own pace through topics",
+      step3: "Test yourself",
+      step3_desc: "Practice with interactive quizzes",
+      step4: "Earn XP",
+      step4_desc: "Track progress and stay motivated with rewards",
+      features_title: "Smart Features",
+      features_subtitle: "Everything you need to succeed",
+      feature1: "Progress Tracking",
+      feature1_desc: "See exactly where you are and what's ahead",
+      feature2: "Adaptive Learning",
+      feature2_desc: "System recommends topics you need to review",
+      feature3: "Gamification",
+      feature3_desc: "XP points, badges and daily streaks keep you motivated",
+      feature4: "Custom Quizzes",
+      feature4_desc: "Create quizzes from only the topics you need",
+      subjects_title: "Subjects",
+      subjects_subtitle: "Everything you need for your maturita",
+      gamification_title: "Learning as a game",
+      gamification_subtitle: "Earn points, badges and maintain your streak",
+      pricing_title: "Pricing Plans",
+      pricing_subtitle: "Choose the plan that suits you",
+      free: "Free",
+      free_desc: "Basic access to get started",
+      free_feature1: "5 subjects",
+      free_feature2: "Basic topics",
+      free_feature3: "3 quizzes daily",
+      free_feature4: "Limited progress",
+      monthly: "Monthly",
+      monthly_feature1: "All subjects",
+      monthly_feature2: "All topics & quizzes",
+      monthly_feature3: "Unlimited quizzes",
+      monthly_feature4: "Full progress tracking",
+      monthly_feature5: "Adaptive learning",
+      monthly_feature6: "Custom quizzes",
+      lifetime: "Lifetime",
+      lifetime_badge: "Best Value",
+      lifetime_feature1: "Everything from Premium",
+      lifetime_feature2: "Lifetime access",
+      lifetime_feature3: "Future features free",
+      lifetime_feature4: "Priority support",
+      lifetime_feature5: "Offline mode",
+      lifetime_feature6: "Export notes",
+      testimonials_title: "What students say",
+      final_cta: "Start preparing today",
+      final_cta_desc: "Join thousands of students who already passed their maturita with 4ty",
+      footer_copyright: "© 2025 4ty. All rights reserved.",
+      topics: "topics",
+    }
+  };
+
+  const text = t[language];
+
+  const subjects = [
+    { icon: BookOpen, name_sk: "Slovenský jazyk a literatúra", name_en: "Slovak Language & Literature", color: "from-blue-400 to-blue-600", topics: 24 },
+    { icon: Globe, name_sk: "Anglický jazyk", name_en: "English Language", color: "from-purple-400 to-purple-600", topics: 18 },
+    { icon: Globe, name_sk: "Nemecký jazyk", name_en: "German Language", color: "from-pink-400 to-pink-600", topics: 18 },
+    { icon: Brain, name_sk: "Matematika", name_en: "Mathematics", color: "from-orange-400 to-orange-600", topics: 22 },
+    { icon: Zap, name_sk: "Elektrotechnika", name_en: "Electrical Engineering", color: "from-yellow-400 to-yellow-600", topics: 16 },
+    { icon: Sparkles, name_sk: "Grafický dizajn", name_en: "Graphic Design", color: "from-teal-400 to-teal-600", topics: 12 },
+  ];
+
+  const testimonials = [
+    { 
+      text: "Toto mi zachránilo maturitu. Konečne som mal jasný prehľad čo sa učiť!", 
+      author: "Matej K.", 
+      age: 18,
+      image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop"
+    },
+    { 
+      text: "Gamifikácia ma drží motivovaného každý deň. Už mám streak 45 dní!", 
+      author: "Lucia M.", 
+      age: 17,
+      image: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&h=150&fit=crop"
+    },
+    { 
+      text: "Najlepšia investícia do môjho vzdelania. Doporučujem všetkým!", 
+      author: "Tomáš P.", 
+      age: 19,
+      image: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&h=150&fit=crop"
+    },
+    { 
+      text: "Konečne som sa dostal z trojky na jednotku z matematiky. Ďakujem!", 
+      author: "Jakub S.", 
+      age: 18,
+      image: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150&h=150&fit=crop"
+    },
+    { 
+      text: "Adaptívne učenie je geniálne. Vie presne čo potrebujem opakovať.", 
+      author: "Nina R.", 
+      age: 17,
+      image: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop"
+    },
+    { 
+      text: "Za €24.99 doživotne? Best deal ever. Viac než stojí za to!", 
+      author: "Martin D.", 
+      age: 19,
+      image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop"
+    },
+  ];
+
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
+      {/* Mobile Menu */}
+      {menuOpen && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm"
+          onClick={() => setMenuOpen(false)}
+        >
+          <motion.div
+            initial={{ x: -300 }}
+            animate={{ x: 0 }}
+            exit={{ x: -300 }}
+            className="absolute left-0 top-0 bottom-0 w-80 bg-white shadow-2xl p-6"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-8">
+              <div className="flex items-center gap-2">
+                <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-purple-500 to-purple-700 flex items-center justify-center shadow-lg">
+                  <GraduationCap className="w-6 h-6 text-white" />
+                </div>
+                <span className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+                  4ty
+                </span>
+              </div>
+              <Button variant="ghost" size="icon" onClick={() => setMenuOpen(false)}>
+                <X className="w-6 h-6" />
+              </Button>
+            </div>
+
+            <nav className="space-y-2">
+              {isAuthenticated ? (
+                <Link to={createPageUrl("Dashboard")} onClick={() => setMenuOpen(false)}>
+                  <Button variant="ghost" className="w-full justify-start text-lg h-12 rounded-xl">
+                    <Target className="w-5 h-5 mr-3" />
+                    {text.menu_dashboard}
+                  </Button>
+                </Link>
+              ) : (
+                <Button 
+                  variant="ghost" 
+                  className="w-full justify-start text-lg h-12 rounded-xl"
+                  onClick={() => {
+                    setMenuOpen(false);
+                    handleLogin();
+                  }}
+                >
+                  <Shield className="w-5 h-5 mr-3" />
+                  {text.menu_login}
+                </Button>
+              )}
+              <Button variant="ghost" className="w-full justify-start text-lg h-12 rounded-xl" onClick={() => setMenuOpen(false)}>
+                <BookOpen className="w-5 h-5 mr-3" />
+                {text.menu_subjects}
+              </Button>
+              <Link to={createPageUrl("Pricing")} onClick={() => setMenuOpen(false)}>
+                <Button variant="ghost" className="w-full justify-start text-lg h-12 rounded-xl">
+                  <CreditCard className="w-5 h-5 mr-3" />
+                  {text.menu_pricing}
+                </Button>
+              </Link>
+              <Link to={createPageUrl("Support")} onClick={() => setMenuOpen(false)}>
+                <Button variant="ghost" className="w-full justify-start text-lg h-12 rounded-xl">
+                  <MessageCircle className="w-5 h-5 mr-3" />
+                  {text.menu_support}
+                </Button>
+              </Link>
+            </nav>
+
+            <div className="absolute bottom-6 left-6 right-6">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setLanguage(language === "sk" ? "en" : "sk")}
+                className="w-full rounded-xl"
+              >
+                <Globe className="w-4 h-4 mr-2" />
+                {language === "sk" ? "Slovenčina" : "English"}
+              </Button>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+
+      {/* Navigation */}
+      <motion.nav 
+        className={`fixed top-0 left-0 right-0 z-40 transition-all duration-300 ${
+          scrolled ? 'bg-white/80 backdrop-blur-xl border-b border-slate-200/50 shadow-sm' : 'bg-transparent'
+        }`}
+        initial={{ y: -100 }}
+        animate={{ y: 0 }}
+      >
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setMenuOpen(true)}
+              className="rounded-xl hover:scale-110 transition-transform"
+            >
+              <Menu className="w-6 h-6" />
+            </Button>
+            <div className="flex items-center gap-2">
+              <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-purple-500 to-purple-700 flex items-center justify-center shadow-lg">
+                <GraduationCap className="w-6 h-6 text-white" />
+              </div>
+              <span className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+                4ty
+              </span>
+            </div>
+          </div>
+          
+          <div className="hidden md:flex items-center gap-4">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setLanguage(language === "sk" ? "en" : "sk")}
+              className="rounded-full hover:scale-105 transition-transform"
+            >
+              <Globe className="w-4 h-4 mr-2" />
+              {language.toUpperCase()}
+            </Button>
+            {isAuthenticated ? (
+              <Link to={createPageUrl("Dashboard")}>
+                <Button variant="ghost" className="rounded-full hover:scale-105 transition-transform">
+                  Dashboard
+                </Button>
+              </Link>
+            ) : (
+              <Button 
+                variant="ghost" 
+                className="rounded-full hover:scale-105 transition-transform"
+                onClick={handleLogin}
+              >
+                {text.cta_login}
+              </Button>
+            )}
+            <Link to={createPageUrl("Pricing")}>
+              <Button className="rounded-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white shadow-lg hover:shadow-xl hover:scale-105 transition-all">
+                {text.cta_premium}
+              </Button>
+            </Link>
+          </div>
+          
+          <div className="md:hidden">
+            {isAuthenticated ? (
+              <Link to={createPageUrl("Dashboard")}>
+                <Button size="sm" className="rounded-full bg-gradient-to-r from-purple-600 to-blue-600">
+                  Dashboard
+                </Button>
+              </Link>
+            ) : (
+              <Button 
+                size="sm"
+                className="rounded-full bg-gradient-to-r from-purple-600 to-blue-600"
+                onClick={handleLogin}
+              >
+                {text.cta_login}
+              </Button>
+            )}
+          </div>
+        </div>
+      </motion.nav>
+
+      {/* Hero Section */}
+      <section className="pt-24 sm:pt-32 pb-12 sm:pb-20 px-4 sm:px-6 overflow-hidden">
+        <div className="max-w-7xl mx-auto">
+          <motion.div 
+            className="text-center max-w-4xl mx-auto"
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+          >
+            <motion.div
+              whileHover={{ scale: 1.05, rotate: 5 }}
+              transition={{ type: "spring", stiffness: 300 }}
+            >
+              <Badge className="mb-6 rounded-full bg-purple-100 text-purple-700 border-purple-200 px-4 py-1.5 hover:shadow-lg transition-shadow">
+                <Sparkles className="w-3 h-3 mr-1" />
+                Nová generácia prípravy na maturitu
+              </Badge>
+            </motion.div>
+            
+            <h1 className="text-4xl sm:text-6xl md:text-7xl font-bold mb-6 leading-tight">
+              {text.hero_title}
+              <br />
+              <span className="bg-gradient-to-r from-purple-600 via-blue-600 to-pink-600 bg-clip-text text-transparent">
+                {text.hero_title_highlight}
+              </span>
+            </h1>
+            
+            <p className="text-lg sm:text-xl text-slate-600 mb-10 leading-relaxed px-4">
+              {text.hero_subtitle}
+            </p>
+            
+            <div className="flex flex-col sm:flex-row justify-center gap-4 px-4">
+              {isAuthenticated ? (
+                <Link to={createPageUrl("Dashboard")}>
+                  <motion.div
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    transition={{ type: "spring", stiffness: 400 }}
+                  >
+                    <Button size="lg" className="w-full sm:w-auto rounded-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white shadow-xl hover:shadow-2xl px-8 h-14 text-lg">
+                      <Play className="w-5 h-5 mr-2" />
+                      {text.cta_free}
+                    </Button>
+                  </motion.div>
+                </Link>
+              ) : (
+                <motion.div
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  transition={{ type: "spring", stiffness: 400 }}
+                >
+                  <Button 
+                    size="lg" 
+                    className="w-full sm:w-auto rounded-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white shadow-xl hover:shadow-2xl px-8 h-14 text-lg"
+                    onClick={handleLogin}
+                  >
+                    <Play className="w-5 h-5 mr-2" />
+                    {text.cta_free}
+                  </Button>
+                </motion.div>
+              )}
+              <Link to={createPageUrl("Pricing")}>
+                <motion.div
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  transition={{ type: "spring", stiffness: 400 }}
+                >
+                  <Button size="lg" variant="outline" className="w-full sm:w-auto rounded-full border-2 h-14 px-8 text-lg hover:bg-slate-50 hover:shadow-lg">
+                    {text.cta_premium}
+                    <ChevronRight className="w-5 h-5 ml-2" />
+                  </Button>
+                </motion.div>
+              </Link>
+            </div>
+          </motion.div>
+
+          {/* Hero Visual - NOW WITH REAL CONTENT */}
+          <motion.div 
+            className="mt-12 sm:mt-20 relative"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.3, duration: 0.8 }}
+            style={{ filter: `blur(${blur}px)` }}
+          >
+            <div className="relative rounded-3xl overflow-hidden shadow-2xl bg-gradient-to-br from-slate-900 to-slate-800 p-4 sm:p-8">
+              <div className="absolute inset-0 bg-gradient-to-br from-purple-500/20 to-blue-500/20" />
+              <div className="relative grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
+                {/* Card 1 - AI Learning */}
+                <motion.div
+                  whileHover={{ scale: 1.05, y: -5 }}
+                  transition={{ type: "spring", stiffness: 300 }}
+                >
+                  <Card className="bg-white/10 backdrop-blur-xl border-white/20 p-6 rounded-2xl hover:bg-white/20 transition-all cursor-pointer">
+                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-400 to-blue-500 mb-4 flex items-center justify-center">
+                      <Brain className="w-6 h-6 text-white" />
+                    </div>
+                    <h3 className="text-white font-bold text-lg mb-2">{text.feature1_title}</h3>
+                    <p className="text-white/70 text-sm leading-relaxed">
+                      {text.feature1_desc}
+                    </p>
+                  </Card>
+                </motion.div>
+
+                {/* Card 2 - Exam Questions */}
+                <motion.div
+                  whileHover={{ scale: 1.05, y: -5 }}
+                  transition={{ type: "spring", stiffness: 300 }}
+                >
+                  <Card className="bg-white/10 backdrop-blur-xl border-white/20 p-6 rounded-2xl hover:bg-white/20 transition-all cursor-pointer">
+                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-green-400 to-emerald-500 mb-4 flex items-center justify-center">
+                      <BookOpen className="w-6 h-6 text-white" />
+                    </div>
+                    <h3 className="text-white font-bold text-lg mb-2">{text.feature2_title}</h3>
+                    <p className="text-white/70 text-sm leading-relaxed">
+                      {text.feature2_desc}
+                    </p>
+                  </Card>
+                </motion.div>
+
+                {/* Card 3 - Gamification */}
+                <motion.div
+                  whileHover={{ scale: 1.05, y: -5 }}
+                  transition={{ type: "spring", stiffness: 300 }}
+                >
+                  <Card className="bg-white/10 backdrop-blur-xl border-white/20 p-6 rounded-2xl hover:bg-white/20 transition-all cursor-pointer">
+                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-yellow-400 to-orange-500 mb-4 flex items-center justify-center">
+                      <Trophy className="w-6 h-6 text-white" />
+                    </div>
+                    <h3 className="text-white font-bold text-lg mb-2">{text.feature3_title}</h3>
+                    <p className="text-white/70 text-sm leading-relaxed">
+                      {text.feature3_desc}
+                    </p>
+                  </Card>
+                </motion.div>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Rest of sections remain the same */}
+      {/* How It Works */}
+      <section className="py-12 sm:py-20 px-4 sm:px-6 bg-slate-50">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-12 sm:mb-16">
+            <h2 className="text-3xl sm:text-5xl font-bold mb-4">{text.how_title}</h2>
+          </div>
+          
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 sm:gap-8">
+            {[
+              { icon: BookOpen, title: text.step1, desc: text.step1_desc, color: "from-purple-500 to-purple-600" },
+              { icon: Brain, title: text.step2, desc: text.step2_desc, color: "from-blue-500 to-blue-600" },
+              { icon: Target, title: text.step3, desc: text.step3_desc, color: "from-pink-500 to-pink-600" },
+              { icon: Trophy, title: text.step4, desc: text.step4_desc, color: "from-orange-500 to-orange-600" },
+            ].map((step, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.1 }}
+                viewport={{ once: true }}
+                whileHover={{ y: -10, scale: 1.02 }}
+              >
+                <Card className="p-6 sm:p-8 rounded-3xl border-0 shadow-lg bg-white hover:shadow-2xl transition-all duration-300 group h-full">
+                  <motion.div 
+                    className={`w-12 h-12 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-br ${step.color} mb-6 flex items-center justify-center`}
+                    whileHover={{ scale: 1.1, rotate: 360 }}
+                    transition={{ type: "spring", stiffness: 300 }}
+                  >
+                    <step.icon className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
+                  </motion.div>
+                  <div className="text-2xl sm:text-4xl font-bold text-slate-300 mb-4">{i + 1}</div>
+                  <h3 className="text-xl sm:text-2xl font-bold mb-3">{step.title}</h3>
+                  <p className="text-slate-600 leading-relaxed text-sm sm:text-base">{step.desc}</p>
+                </Card>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Features */}
+      <section className="py-12 sm:py-20 px-4 sm:px-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-12 sm:mb-16">
+            <h2 className="text-3xl sm:text-5xl font-bold mb-4">{text.features_title}</h2>
+            <p className="text-lg sm:text-xl text-slate-600">{text.features_subtitle}</p>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
+            {[
+              { icon: TrendingUp, title: text.feature1, desc: text.feature1_desc, color: "from-purple-500 to-blue-500" },
+              { icon: Brain, title: text.feature2, desc: text.feature2_desc, color: "from-blue-500 to-pink-500" },
+              { icon: Trophy, title: text.feature3, desc: text.feature3_desc, color: "from-orange-500 to-red-500" },
+              { icon: Zap, title: text.feature4, desc: text.feature4_desc, color: "from-green-500 to-emerald-500" },
+            ].map((feature, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, x: i % 2 === 0 ? -30 : 30 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                transition={{ delay: i * 0.1 }}
+                viewport={{ once: true }}
+                whileHover={{ scale: 1.02, y: -5 }}
+              >
+                <Card className="p-6 sm:p-8 rounded-3xl border-0 shadow-lg bg-gradient-to-br from-white to-slate-50 hover:shadow-2xl transition-all duration-300 group h-full cursor-pointer">
+                  <motion.div 
+                    className={`w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-br ${feature.color} mb-6 flex items-center justify-center`}
+                    whileHover={{ scale: 1.1, rotate: -10 }}
+                    transition={{ type: "spring", stiffness: 300 }}
+                  >
+                    <feature.icon className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
+                  </motion.div>
+                  <h3 className="text-xl sm:text-2xl font-bold mb-3">{feature.title}</h3>
+                  <p className="text-slate-600 text-base sm:text-lg leading-relaxed">{feature.desc}</p>
+                </Card>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Subjects */}
+      <section className="py-12 sm:py-20 px-4 sm:px-6 bg-slate-50">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-12 sm:mb-16">
+            <h2 className="text-3xl sm:text-5xl font-bold mb-4">{text.subjects_title}</h2>
+            <p className="text-lg sm:text-xl text-slate-600">{text.subjects_subtitle}</p>
+          </div>
+          
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6">
+            {subjects.map((subject, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, scale: 0.95 }}
+                whileInView={{ opacity: 1, scale: 1 }}
+                transition={{ delay: i * 0.05 }}
+                viewport={{ once: true }}
+                whileHover={{ scale: 1.05, y: -10 }}
+              >
+                {isAuthenticated ? (
+                  <Link to={createPageUrl("Dashboard")}>
+                    <Card className="p-6 sm:p-8 rounded-3xl border-0 shadow-lg hover:shadow-2xl transition-all duration-300 group cursor-pointer overflow-hidden relative">
+                      <motion.div 
+                        className={`absolute inset-0 bg-gradient-to-br ${subject.color} opacity-0 group-hover:opacity-10 transition-opacity duration-300`}
+                        whileHover={{ opacity: 0.1 }}
+                      />
+                      <div className="relative">
+                        <motion.div 
+                          className={`w-12 h-12 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-br ${subject.color} mb-6 flex items-center justify-center`}
+                          whileHover={{ scale: 1.15, rotate: 10 }}
+                          transition={{ type: "spring", stiffness: 300 }}
+                        >
+                          <subject.icon className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
+                        </motion.div>
+                        <h3 className="text-xl sm:text-2xl font-bold mb-2">{language === "sk" ? subject.name_sk : subject.name_en}</h3>
+                        <div className="flex items-center text-slate-600 gap-2 text-sm sm:text-base">
+                          <CheckCircle2 className="w-4 h-4" />
+                          <span>{subject.topics} {text.topics}</span>
+                        </div>
+                      </div>
+                    </Card>
+                  </Link>
+                ) : (
+                  <Card 
+                    className="p-6 sm:p-8 rounded-3xl border-0 shadow-lg hover:shadow-2xl transition-all duration-300 group cursor-pointer overflow-hidden relative"
+                    onClick={handleLogin}
+                  >
+                    <motion.div 
+                      className={`absolute inset-0 bg-gradient-to-br ${subject.color} opacity-0 group-hover:opacity-10 transition-opacity duration-300`}
+                      whileHover={{ opacity: 0.1 }}
+                    />
+                    <div className="relative">
+                      <motion.div 
+                        className={`w-12 h-12 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-br ${subject.color} mb-6 flex items-center justify-center`}
+                        whileHover={{ scale: 1.15, rotate: 10 }}
+                        transition={{ type: "spring", stiffness: 300 }}
+                      >
+                        <subject.icon className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
+                      </motion.div>
+                      <h3 className="text-xl sm:text-2xl font-bold mb-2">{language === "sk" ? subject.name_sk : subject.name_en}</h3>
+                      <div className="flex items-center text-slate-600 gap-2 text-sm sm:text-base">
+                        <CheckCircle2 className="w-4 h-4" />
+                        <span>{subject.topics} {text.topics}</span>
+                      </div>
+                    </div>
+                  </Card>
+                )}
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Testimonials */}
+      <section className="py-12 sm:py-20 px-4 sm:px-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-12 sm:mb-16">
+            <h2 className="text-3xl sm:text-5xl font-bold mb-4">{text.testimonials_title}</h2>
+          </div>
+          
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 sm:gap-8">
+            {testimonials.map((testimonial, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.1 }}
+                viewport={{ once: true }}
+                whileHover={{ y: -10, scale: 1.02 }}
+              >
+                <Card className="p-6 sm:p-8 rounded-3xl border-0 shadow-lg bg-white hover:shadow-2xl transition-all duration-300 h-full">
+                  <div className="flex gap-1 mb-4">
+                    {[...Array(5)].map((_, j) => (
+                      <motion.div
+                        key={j}
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        transition={{ delay: 0.5 + i * 0.1 + j * 0.05 }}
+                      >
+                        <GraduationCap className="w-4 h-4 sm:w-5 sm:h-5 fill-yellow-400 text-yellow-400" />
+                      </motion.div>
+                    ))}
+                  </div>
+                  <p className="text-slate-700 mb-6 text-base sm:text-lg leading-relaxed">"{testimonial.text}"</p>
+                  <div className="flex items-center gap-3">
+                    <img 
+                      src={testimonial.image} 
+                      alt={testimonial.author}
+                      className="w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover"
+                    />
+                    <div>
+                      <div className="font-semibold text-sm sm:text-base">{testimonial.author}</div>
+                      <div className="text-xs sm:text-sm text-slate-500">{testimonial.age} rokov}</div>
+                    </div>
+                  </div>
+                </Card>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Final CTA */}
+      <section className="py-12 sm:py-20 px-4 sm:px-6 bg-gradient-to-br from-purple-600 via-blue-600 to-pink-600">
+        <div className="max-w-4xl mx-auto text-center text-white">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+          >
+            <h2 className="text-3xl sm:text-5xl md:text-6xl font-bold mb-6">{text.final_cta}</h2>
+            <p className="text-lg sm:text-xl mb-10 opacity-90">{text.final_cta_desc}</p>
+            {isAuthenticated ? (
+              <Link to={createPageUrl("Dashboard")}>
+                <motion.div
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <Button size="lg" className="rounded-full bg-white text-purple-600 hover:bg-slate-100 shadow-2xl px-10 h-14 sm:h-16 text-lg sm:text-xl hover:shadow-purple-500/50">
+                    <Play className="w-5 h-5 sm:w-6 sm:h-6 mr-2" />
+                    {text.cta_free}
+                  </Button>
+                </motion.div>
+              </Link>
+            ) : (
+              <motion.div
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <Button 
+                  size="lg" 
+                  className="rounded-full bg-white text-purple-600 hover:bg-slate-100 shadow-2xl px-10 h-14 sm:h-16 text-lg sm:text-xl hover:shadow-purple-500/50"
+                  onClick={handleLogin}
+                >
+                  <Play className="w-5 h-5 sm:w-6 sm:h-6 mr-2" />
+                  {text.cta_free}
+                </Button>
+              </motion.div>
+            )}
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="bg-slate-900 text-white py-8 sm:py-12 px-4 sm:px-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex flex-col md:flex-row justify-between items-center gap-6">
+            <div className="flex items-center gap-2">
+              <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-purple-500 to-purple-700 flex items-center justify-center">
+                <GraduationCap className="w-6 h-6 text-white" />
+              </div>
+              <span className="text-2xl font-bold">4ty</span>
+            </div>
+            
+            <div className="text-slate-400 text-sm sm:text-base">
+              {text.footer_copyright}
+            </div>
+            
+            <div className="flex gap-6">
+              <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" className="text-slate-400 hover:text-white transition-colors">
+                Instagram
+              </a>
+              <a href="https://tiktok.com" target="_blank" rel="noopener noreferrer" className="text-slate-400 hover:text-white transition-colors">
+                TikTok
+              </a>
+            </div>
+          </div>
+        </div>
+      </footer>
+    </div>
+  );
+}
