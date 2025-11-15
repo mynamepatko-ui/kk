@@ -1,0 +1,274 @@
+import React, { useState, useEffect } from "react";
+import { base44 } from "@/api/base44Client";
+import { useQuery } from "@tanstack/react-query";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import { useSearchParams, useNavigate } from "react-router-dom";
+import { createPageUrl } from "@/utils";
+import {
+  BookOpen, ArrowLeft, Trophy, CheckCircle2, Lock, Globe, 
+  GraduationCap, Play, Award
+} from "lucide-react";
+import { motion } from "framer-motion";
+
+export default function SubjectDetail() {
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const subjectId = searchParams.get("id");
+  const [language, setLanguage] = useState("sk");
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    const loadUser = async () => {
+      try {
+        const currentUser = await base44.auth.me();
+        setUser(currentUser);
+      } catch (error) {
+        console.error("Error loading user:", error);
+      }
+    };
+    loadUser();
+  }, []);
+
+  const { data: subject } = useQuery({
+    queryKey: ['subject', subjectId],
+    queryFn: async () => {
+      const subjects = await base44.entities.Subject.list();
+      return subjects.find(s => s.id === subjectId);
+    },
+  });
+
+  const { data: topics = [] } = useQuery({
+    queryKey: ['topics', subjectId],
+    queryFn: async () => {
+      const allTopics = await base44.entities.Topic.list();
+      return allTopics.filter(t => t.subject_id === subjectId).sort((a, b) => a.order - b.order);
+    },
+    enabled: !!subjectId,
+  });
+
+  const { data: progress = [] } = useQuery({
+    queryKey: ['progress', subjectId, user?.email],
+    queryFn: async () => {
+      if (!user?.email) return [];
+      const allProgress = await base44.entities.UserProgress.list();
+      return allProgress.filter(p => p.subject_id === subjectId && p.created_by === user.email);
+    },
+    enabled: !!subjectId && !!user?.email,
+  });
+
+  const getDifficultyColor = (difficulty) => {
+    switch(difficulty) {
+      case 'easy': return 'bg-green-100 text-green-700';
+      case 'medium': return 'bg-yellow-100 text-yellow-700';
+      case 'hard': return 'bg-red-100 text-red-700';
+      default: return 'bg-gray-100 text-gray-700';
+    }
+  };
+
+  const getTopicProgress = (topicId) => {
+    const topicProgress = progress.find(p => p.topic_id === topicId);
+    return topicProgress?.score || 0;
+  };
+
+  const completedTopics = topics.filter(t => getTopicProgress(t.id) >= 80).length;
+  const overallProgress = topics.length > 0 ? (completedTopics / topics.length) * 100 : 0;
+
+  const handleStartQuiz = (topicId) => {
+    // DIRECT quiz launch - no intermediate pages
+    navigate(createPageUrl(`QuizMode?topicId=${topicId}&difficulty=medium`));
+  };
+
+  const handleMaturitaTest = () => {
+    // DIRECT maturita launch
+    navigate(createPageUrl(`QuizMode?subjectId=${subjectId}&maturita=true`));
+  };
+
+  const isPremium = user?.role === "admin";
+  const needsUpgrade = subject?.premium_only && !isPremium;
+
+  if (!subject) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin w-12 h-12 border-4 border-purple-600 border-t-transparent rounded-full" />
+      </div>
+    );
+  }
+
+  if (needsUpgrade) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
+        <div className="bg-white/80 backdrop-blur-xl border-b border-slate-200/50">
+          <div className="max-w-7xl mx-auto px-6 py-4 flex items-center">
+            <Button variant="ghost" size="icon" onClick={() => navigate(createPageUrl("Dashboard"))}>
+              <ArrowLeft className="w-5 h-5" />
+            </Button>
+          </div>
+        </div>
+        <div className="max-w-4xl mx-auto px-6 py-20">
+          <Card className="p-12 rounded-3xl shadow-2xl text-center bg-gradient-to-br from-purple-50 to-blue-50">
+            <Lock className="w-24 h-24 mx-auto mb-6 text-purple-600" />
+            <h1 className="text-4xl font-bold mb-4">Tento predmet je Premium</h1>
+            <p className="text-xl text-slate-600 mb-8">
+              Získaj prístup k {language === "sk" ? subject.name_sk : subject.name_en}
+            </p>
+            <Button 
+              onClick={() => navigate(createPageUrl("Pricing"))}
+              className="rounded-full bg-gradient-to-r from-purple-600 to-blue-600 h-14 px-10 text-lg"
+            >
+              <Trophy className="w-5 h-5 mr-2" />
+              Prejsť na Premium
+            </Button>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
+      {/* Header */}
+      <div className="bg-white/80 backdrop-blur-xl border-b border-slate-200/50 sticky top-0 z-40">
+        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <Button variant="ghost" size="icon" onClick={() => navigate(createPageUrl("Dashboard"))}>
+              <ArrowLeft className="w-5 h-5" />
+            </Button>
+            <div className="flex items-center gap-2">
+              <div 
+                className="w-10 h-10 rounded-2xl flex items-center justify-center"
+                style={{ background: `linear-gradient(to bottom right, ${subject.color}, ${subject.color}dd)` }}
+              >
+                <GraduationCap className="w-6 h-6 text-white" />
+              </div>
+              <span className="text-xl font-bold">
+                {language === "sk" ? subject.name_sk : subject.name_en}
+              </span>
+            </div>
+          </div>
+          
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setLanguage(language === "sk" ? "en" : "sk")}
+            className="rounded-full"
+          >
+            <Globe className="w-4 h-4 mr-2" />
+            {language.toUpperCase()}
+          </Button>
+        </div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-6 py-12">
+        {/* Overview */}
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+          <Card className="p-8 rounded-3xl shadow-xl mb-8 bg-gradient-to-br from-white to-slate-50">
+            <div className="grid md:grid-cols-3 gap-6">
+              <div>
+                <div className="text-sm text-slate-600 mb-2">Celkový pokrok</div>
+                <div className="text-4xl font-bold mb-3">{Math.round(overallProgress)}%</div>
+                <Progress value={overallProgress} className="h-3" />
+              </div>
+              
+              <div>
+                <div className="text-sm text-slate-600 mb-2">Dokončené témy</div>
+                <div className="text-4xl font-bold mb-3">{completedTopics}/{topics.length}</div>
+                <div className="flex gap-1">
+                  {topics.slice(0, 10).map((_, i) => (
+                    <div key={i} className={`h-2 flex-1 rounded-full ${i < completedTopics ? 'bg-green-500' : 'bg-slate-200'}`} />
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <div className="text-sm text-slate-600 mb-2">Maturitný test</div>
+                <div className="text-4xl font-bold mb-3">
+                  <Award className="w-8 h-8 text-orange-500 inline" />
+                </div>
+                <Button 
+                  className="rounded-full w-full bg-gradient-to-r from-yellow-500 to-orange-600 hover:from-yellow-600 hover:to-orange-700"
+                  onClick={handleMaturitaTest}
+                >
+                  <Award className="w-4 h-4 mr-2" />
+                  Zopakuj si
+                </Button>
+              </div>
+            </div>
+          </Card>
+        </motion.div>
+
+        {/* Topics */}
+        <h2 className="text-3xl font-bold mb-6">Témy</h2>
+        
+        <div className="grid md:grid-cols-2 gap-6">
+          {topics.map((topic, i) => {
+            const progressValue = getTopicProgress(topic.id);
+            const isCompleted = progressValue >= 80;
+
+            return (
+              <motion.div
+                key={topic.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.05 }}
+                whileHover={{ y: -5 }}
+              >
+                <Card className="p-6 rounded-3xl shadow-lg hover:shadow-2xl transition-all cursor-pointer">
+                  <div className="flex items-start gap-4">
+                    <motion.div 
+                      className="w-12 h-12 rounded-2xl flex items-center justify-center"
+                      style={{ background: `linear-gradient(to bottom right, ${subject.color}, ${subject.color}dd)` }}
+                      whileHover={{ scale: 1.1, rotate: 10 }}
+                    >
+                      <span className="text-white font-bold">{i + 1}</span>
+                    </motion.div>
+
+                    <div className="flex-1">
+                      <h3 className="text-xl font-bold mb-2">
+                        {language === "sk" ? topic.name_sk : topic.name_en}
+                      </h3>
+                      <p className="text-sm text-slate-600 mb-3 line-clamp-2">
+                        {language === "sk" ? topic.description_sk : topic.description_en}
+                      </p>
+
+                      <div className="flex items-center gap-2 mb-3">
+                        <Badge className={getDifficultyColor(topic.difficulty)}>
+                          {topic.difficulty === "easy" ? "Ľahké" : 
+                           topic.difficulty === "medium" ? "Stredné" : "Ťažké"}
+                        </Badge>
+                        {isCompleted && (
+                          <Badge className="bg-green-100 text-green-700">
+                            <CheckCircle2 className="w-3 h-3 mr-1" />
+                            Dokončené
+                          </Badge>
+                        )}
+                      </div>
+
+                      <div className="space-y-2 mb-4">
+                        <div className="flex justify-between text-sm">
+                          <span className="text-slate-600">Pokrok</span>
+                          <span className="font-semibold">{progressValue}%</span>
+                        </div>
+                        <Progress value={progressValue} className="h-2" />
+                      </div>
+
+                      <Button 
+                        className="w-full rounded-full bg-gradient-to-r from-purple-600 to-blue-600"
+                        onClick={() => handleStartQuiz(topic.id)}
+                      >
+                        <Play className="w-4 h-4 mr-2" />
+                        Spustiť test
+                      </Button>
+                    </div>
+                  </div>
+                </Card>
+              </motion.div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
