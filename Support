@@ -1,0 +1,233 @@
+import React, { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Link } from "react-router-dom";
+import { createPageUrl } from "@/utils";
+import {
+  GraduationCap, Globe, MessageCircle, Mail, Phone,
+  Send, ChevronDown, ChevronUp
+} from "lucide-react";
+import { motion } from "framer-motion";
+
+export default function Support() {
+  const [language, setLanguage] = useState("sk");
+  const [expandedFAQ, setExpandedFAQ] = useState(null);
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [message, setMessage] = useState("");
+
+  const t = {
+    sk: {
+      title: "Potrebujete pomoc?",
+      subtitle: "Sme tu pre vás 24/7",
+      faq_title: "Často kladené otázky",
+      contact_title: "Napíšte nám",
+      name: "Meno",
+      email: "Email",
+      message: "Správa",
+      send: "Odoslať správu",
+      or_contact: "Alebo nás kontaktujte priamo",
+    },
+    en: {
+      title: "Need help?",
+      subtitle: "We're here for you 24/7",
+      faq_title: "Frequently Asked Questions",
+      contact_title: "Contact us",
+      name: "Name",
+      email: "Email",
+      message: "Message",
+      send: "Send message",
+      or_contact: "Or contact us directly",
+    }
+  };
+
+  const text = t[language];
+
+  const faqs = [
+    {
+      question: "Ako funguje zadarmo verzia?",
+      answer: "Zadarmo verzia ti umožňuje prístup k 5 predmetom, základným témam a 3 kvízom denne. Je to perfektný spôsob, ako si vyskúšať platformu pred zakúpením prémiového plánu."
+    },
+    {
+      question: "Môžem kedykoľvek zrušiť predplatné?",
+      answer: "Áno! Mesačné predplatné môžeš zrušiť kedykoľvek bez poplatku. Doživotný prístup je jednorazová platba bez automatického obnovenia."
+    },
+    {
+      question: "Sú quizy aktuálne podľa nového učebného plánu?",
+      answer: "Áno, všetky naše materiály sú aktualizované podľa najnovších učebných osnov a maturitných požiadaviek na rok 2024/2025."
+    },
+    {
+      question: "Môžem používať 4ty na viacerých zariadeniach?",
+      answer: "Samozrejme! Tvoj účet môžeš používať na telefóne, tablete aj počítači. Všetko sa automaticky synchronizuje."
+    },
+    {
+      question: "Čo ak mi nevyhovuje Premium?",
+      answer: "Ponúkame 14-dňovú záruku vrátenia peňazí. Ak nie si spokojný, vrátime ti peniaze, žiadne otázky."
+    },
+  ];
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    alert("Správa odoslaná! Odpovieme čo najskôr.");
+    setName("");
+    setEmail("");
+    setMessage("");
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
+      {/* Header */}
+      <div className="bg-white/80 backdrop-blur-xl border-b border-slate-200/50">
+        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+          <Link to={createPageUrl("Home")} className="flex items-center gap-2">
+            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-purple-500 to-purple-700 flex items-center justify-center">
+              <GraduationCap className="w-6 h-6 text-white" />
+            </div>
+            <span className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+              4ty
+            </span>
+          </Link>
+          
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setLanguage(language === "sk" ? "en" : "sk")}
+            className="rounded-full"
+          >
+            <Globe className="w-4 h-4 mr-2" />
+            {language.toUpperCase()}
+          </Button>
+        </div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-6 py-20">
+        {/* Hero */}
+        <div className="text-center mb-16">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
+            <h1 className="text-5xl md:text-6xl font-bold mb-4">{text.title}</h1>
+            <p className="text-xl text-slate-600">{text.subtitle}</p>
+          </motion.div>
+        </div>
+
+        <div className="grid md:grid-cols-2 gap-12 mb-20">
+          {/* FAQ Section */}
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+          >
+            <h2 className="text-3xl font-bold mb-8">{text.faq_title}</h2>
+            <div className="space-y-4">
+              {faqs.map((faq, i) => (
+                <Card
+                  key={i}
+                  className="rounded-2xl border-0 shadow-lg overflow-hidden"
+                >
+                  <button
+                    onClick={() => setExpandedFAQ(expandedFAQ === i ? null : i)}
+                    className="w-full p-6 text-left flex items-center justify-between hover:bg-slate-50 transition-colors"
+                  >
+                    <span className="font-semibold text-lg pr-4">{faq.question}</span>
+                    {expandedFAQ === i ? (
+                      <ChevronUp className="w-5 h-5 flex-shrink-0 text-purple-600" />
+                    ) : (
+                      <ChevronDown className="w-5 h-5 flex-shrink-0" />
+                    )}
+                  </button>
+                  {expandedFAQ === i && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      className="px-6 pb-6 text-slate-600 leading-relaxed"
+                    >
+                      {faq.answer}
+                    </motion.div>
+                  )}
+                </Card>
+              ))}
+            </div>
+          </motion.div>
+
+          {/* Contact Form */}
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+          >
+            <h2 className="text-3xl font-bold mb-8">{text.contact_title}</h2>
+            <Card className="p-8 rounded-3xl border-0 shadow-xl">
+              <form onSubmit={handleSubmit} className="space-y-6">
+                <div>
+                  <Label htmlFor="name">{text.name}</Label>
+                  <Input
+                    id="name"
+                    type="text"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    className="mt-2 h-12 rounded-xl"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="email">{text.email}</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="mt-2 h-12 rounded-xl"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="message">{text.message}</Label>
+                  <Textarea
+                    id="message"
+                    value={message}
+                    onChange={(e) => setMessage(e.target.value)}
+                    className="mt-2 rounded-xl min-h-[150px]"
+                    required
+                  />
+                </div>
+
+                <motion.div
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  <Button
+                    type="submit"
+                    className="w-full h-12 rounded-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white shadow-lg"
+                  >
+                    <Send className="w-4 h-4 mr-2" />
+                    {text.send}
+                  </Button>
+                </motion.div>
+              </form>
+
+              <div className="mt-8 pt-8 border-t">
+                <p className="text-sm text-slate-600 mb-4">{text.or_contact}</p>
+                <div className="space-y-3">
+                  <a href="mailto:support@4ty.sk" className="flex items-center gap-3 text-slate-700 hover:text-purple-600 transition-colors">
+                    <Mail className="w-5 h-5" />
+                    support@4ty.sk
+                  </a>
+                  <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 text-slate-700 hover:text-purple-600 transition-colors">
+                    <MessageCircle className="w-5 h-5" />
+                    @4ty.sk
+                  </a>
+                </div>
+              </div>
+            </Card>
+          </motion.div>
+        </div>
+      </div>
+    </div>
+  );
+}
