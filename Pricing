@@ -1,0 +1,474 @@
+import React, { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Link } from "react-router-dom";
+import { createPageUrl } from "@/utils";
+import {
+  GraduationCap, CheckCircle2, CreditCard, Globe, ArrowLeft,
+  Lock, Shield, Sparkles
+} from "lucide-react";
+import { motion } from "framer-motion";
+
+export default function Pricing() {
+  const [language, setLanguage] = useState("sk");
+  const [selectedPlan, setSelectedPlan] = useState(null);
+  const [paymentMethod, setPaymentMethod] = useState(null);
+  const [cardNumber, setCardNumber] = useState("");
+  const [cardExpiry, setCardExpiry] = useState("");
+  const [cardCVC, setCardCVC] = useState("");
+  const [cardName, setCardName] = useState("");
+
+  const t = {
+    sk: {
+      title: "Vyber si svoj plán",
+      subtitle: "Začni zadarmo, prejdi na premium kedykoľvek",
+      monthly: "Mesačne",
+      lifetime: "Doživotne",
+      lifetime_badge: "Najvýhodnejšie",
+      free: "Zadarmo",
+      select_plan: "Vybrať plán",
+      checkout: "Pokračovať na platbu",
+      payment_title: "Platobné údaje",
+      card_number: "Číslo karty",
+      card_expiry: "Platnosť (MM/RR)",
+      card_cvc: "CVC",
+      card_name: "Meno na karte",
+      or: "alebo zaplať cez",
+      complete_payment: "Dokončiť platbu",
+      secure: "Zabezpečená platba SSL šifrovaním",
+      back: "Späť na cenník",
+    },
+    en: {
+      title: "Choose your plan",
+      subtitle: "Start free, upgrade to premium anytime",
+      monthly: "Monthly",
+      lifetime: "Lifetime",
+      lifetime_badge: "Best Value",
+      free: "Free",
+      select_plan: "Select plan",
+      checkout: "Continue to payment",
+      payment_title: "Payment details",
+      card_number: "Card number",
+      card_expiry: "Expiry (MM/YY)",
+      card_cvc: "CVC",
+      card_name: "Cardholder name",
+      or: "or pay with",
+      complete_payment: "Complete payment",
+      secure: "Secure payment with SSL encryption",
+      back: "Back to pricing",
+    }
+  };
+
+  const text = t[language];
+
+  const plans = [
+    {
+      id: "free",
+      name: text.free,
+      price: "€0",
+      period: "",
+      features: [
+        "5 predmetov",
+        "Základné témy",
+        "3 quizy denne",
+        "Obmedzený progres",
+        "Komunitná podpora",
+      ],
+      color: "from-slate-500 to-slate-600",
+      isFree: true
+    },
+    {
+      id: "monthly",
+      name: text.monthly,
+      price: "€4.99",
+      period: "/mesiac",
+      features: [
+        "Všetky predmety",
+        "Všetky témy a quizy",
+        "Neobmedzené quizy",
+        "Plný progres tracking",
+        "Adaptívne učenie",
+        "Vlastné quizy",
+        "Prioritná podpora",
+      ],
+      color: "from-purple-500 to-blue-600",
+      popular: true
+    },
+    {
+      id: "lifetime",
+      name: text.lifetime,
+      price: "€24.99",
+      period: "",
+      badge: text.lifetime_badge,
+      features: [
+        "Všetko z Premium",
+        "Doživotný prístup",
+        "Budúce funkcie zdarma",
+        "Prioritná podpora 24/7",
+        "Offline režim",
+        "Export poznámok PDF",
+        "Certifikáty po dokončení",
+        "Personalizované tutoriály",
+      ],
+      color: "from-purple-500 to-pink-600",
+      recommended: true
+    },
+  ];
+
+  const handlePlanSelect = (planId) => {
+    if (planId === "free") {
+      window.location.href = createPageUrl("Dashboard");
+    } else {
+      setSelectedPlan(planId);
+    }
+  };
+
+  const handlePayment = () => {
+    // In a real app, this would process the payment
+    alert("Platba prebieha... (Demo režim)");
+  };
+
+  if (selectedPlan) {
+    const plan = plans.find(p => p.id === selectedPlan);
+    
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
+        {/* Header */}
+        <div className="bg-white/80 backdrop-blur-xl border-b border-slate-200/50">
+          <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+            <Link to={createPageUrl("Home")} className="flex items-center gap-2">
+              <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-purple-500 to-purple-700 flex items-center justify-center">
+                <GraduationCap className="w-6 h-6 text-white" />
+              </div>
+              <span className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+                4ty
+              </span>
+            </Link>
+            
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setLanguage(language === "sk" ? "en" : "sk")}
+              className="rounded-full"
+            >
+              <Globe className="w-4 h-4 mr-2" />
+              {language.toUpperCase()}
+            </Button>
+          </div>
+        </div>
+
+        <div className="max-w-4xl mx-auto px-6 py-12">
+          <Button
+            variant="ghost"
+            onClick={() => setSelectedPlan(null)}
+            className="mb-8 rounded-full"
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            {text.back}
+          </Button>
+
+          <div className="grid md:grid-cols-2 gap-8">
+            {/* Order Summary */}
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+            >
+              <Card className="p-8 rounded-3xl border-0 shadow-xl sticky top-8">
+                <h2 className="text-2xl font-bold mb-6">{plan.name}</h2>
+                
+                <div className="mb-6">
+                  <div className="text-5xl font-bold mb-2">{plan.price}</div>
+                  {plan.period && <div className="text-slate-600">{plan.period}</div>}
+                </div>
+
+                <div className="space-y-3 mb-6">
+                  {plan.features.map((feature, i) => (
+                    <div key={i} className="flex items-center gap-3">
+                      <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
+                      <span className="text-slate-700">{feature}</span>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="pt-6 border-t">
+                  <div className="flex justify-between text-lg font-bold mb-2">
+                    <span>Celkom</span>
+                    <span>{plan.price}</span>
+                  </div>
+                  {plan.period && (
+                    <div className="text-sm text-slate-600">
+                      Automatické obnovenie každý mesiac
+                    </div>
+                  )}
+                </div>
+              </Card>
+            </motion.div>
+
+            {/* Payment Form */}
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+            >
+              <Card className="p-8 rounded-3xl border-0 shadow-xl">
+                <h2 className="text-2xl font-bold mb-6">{text.payment_title}</h2>
+
+                {/* Payment Methods */}
+                <div className="grid grid-cols-4 gap-3 mb-8">
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => setPaymentMethod("card")}
+                    className={`p-4 rounded-2xl border-2 transition-all ${
+                      paymentMethod === "card" 
+                        ? "border-purple-600 bg-purple-50" 
+                        : "border-slate-200 hover:border-slate-300"
+                    }`}
+                  >
+                    <CreditCard className="w-6 h-6 mx-auto" />
+                    <div className="text-xs mt-2">Karta</div>
+                  </motion.button>
+
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => setPaymentMethod("google")}
+                    className={`p-4 rounded-2xl border-2 transition-all ${
+                      paymentMethod === "google" 
+                        ? "border-purple-600 bg-purple-50" 
+                        : "border-slate-200 hover:border-slate-300"
+                    }`}
+                  >
+                    <div className="text-2xl">G</div>
+                    <div className="text-xs mt-2">Google</div>
+                  </motion.button>
+
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => setPaymentMethod("apple")}
+                    className={`p-4 rounded-2xl border-2 transition-all ${
+                      paymentMethod === "apple" 
+                        ? "border-purple-600 bg-purple-50" 
+                        : "border-slate-200 hover:border-slate-300"
+                    }`}
+                  >
+                    <div className="text-2xl"></div>
+                    <div className="text-xs mt-2">Apple</div>
+                  </motion.button>
+
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => setPaymentMethod("paypal")}
+                    className={`p-4 rounded-2xl border-2 transition-all ${
+                      paymentMethod === "paypal" 
+                        ? "border-purple-600 bg-purple-50" 
+                        : "border-slate-200 hover:border-slate-300"
+                    }`}
+                  >
+                    <div className="text-2xl font-bold text-blue-600">P</div>
+                    <div className="text-xs mt-2">PayPal</div>
+                  </motion.button>
+                </div>
+
+                {paymentMethod === "card" && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    className="space-y-4"
+                  >
+                    <div>
+                      <Label htmlFor="cardNumber">{text.card_number}</Label>
+                      <Input
+                        id="cardNumber"
+                        type="text"
+                        placeholder="1234 5678 9012 3456"
+                        value={cardNumber}
+                        onChange={(e) => setCardNumber(e.target.value)}
+                        maxLength={19}
+                        className="mt-2 h-12 rounded-xl"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="cardExpiry">{text.card_expiry}</Label>
+                        <Input
+                          id="cardExpiry"
+                          type="text"
+                          placeholder="MM/RR"
+                          value={cardExpiry}
+                          onChange={(e) => setCardExpiry(e.target.value)}
+                          maxLength={5}
+                          className="mt-2 h-12 rounded-xl"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="cardCVC">{text.card_cvc}</Label>
+                        <Input
+                          id="cardCVC"
+                          type="text"
+                          placeholder="123"
+                          value={cardCVC}
+                          onChange={(e) => setCardCVC(e.target.value)}
+                          maxLength={3}
+                          className="mt-2 h-12 rounded-xl"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <Label htmlFor="cardName">{text.card_name}</Label>
+                      <Input
+                        id="cardName"
+                        type="text"
+                        placeholder="Ján Novák"
+                        value={cardName}
+                        onChange={(e) => setCardName(e.target.value)}
+                        className="mt-2 h-12 rounded-xl"
+                      />
+                    </div>
+                  </motion.div>
+                )}
+
+                {paymentMethod && paymentMethod !== "card" && (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="text-center py-8"
+                  >
+                    <p className="text-slate-600">
+                      Budete presmerovaní na {paymentMethod === "google" ? "Google Pay" : paymentMethod === "apple" ? "Apple Pay" : "PayPal"}
+                    </p>
+                  </motion.div>
+                )}
+
+                <motion.div
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  <Button
+                    className="w-full h-14 rounded-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white shadow-xl mt-8 text-lg"
+                    onClick={handlePayment}
+                    disabled={!paymentMethod}
+                  >
+                    <Lock className="w-5 h-5 mr-2" />
+                    {text.complete_payment} {plan.price}
+                  </Button>
+                </motion.div>
+
+                <div className="flex items-center justify-center gap-2 text-sm text-slate-600 mt-4">
+                  <Shield className="w-4 h-4" />
+                  {text.secure}
+                </div>
+              </Card>
+            </motion.div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
+      {/* Header */}
+      <div className="bg-white/80 backdrop-blur-xl border-b border-slate-200/50">
+        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+          <Link to={createPageUrl("Home")} className="flex items-center gap-2">
+            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-purple-500 to-purple-700 flex items-center justify-center">
+              <GraduationCap className="w-6 h-6 text-white" />
+            </div>
+            <span className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+              4ty
+            </span>
+          </Link>
+          
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setLanguage(language === "sk" ? "en" : "sk")}
+            className="rounded-full"
+          >
+            <Globe className="w-4 h-4 mr-2" />
+            {language.toUpperCase()}
+          </Button>
+        </div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-6 py-20">
+        <div className="text-center mb-16">
+          <Badge className="mb-6 rounded-full bg-purple-100 text-purple-700 border-purple-200 px-4 py-1.5">
+            <Sparkles className="w-3 h-3 mr-1" />
+            {text.subtitle}
+          </Badge>
+          <h1 className="text-5xl md:text-6xl font-bold mb-4">{text.title}</h1>
+        </div>
+
+        <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+          {plans.map((plan, i) => (
+            <motion.div
+              key={plan.id}
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.1 }}
+              className={plan.recommended ? "md:-mt-4" : ""}
+              whileHover={{ scale: 1.05, y: -10 }}
+            >
+              <Card className={`p-8 rounded-3xl border-0 shadow-xl hover:shadow-2xl transition-all duration-300 relative overflow-hidden h-full flex flex-col ${
+                plan.popular ? 'bg-gradient-to-br from-purple-600 to-blue-600 text-white' : 'bg-white'
+              }`}>
+                {plan.badge && (
+                  <Badge className="absolute top-6 right-6 bg-yellow-400 text-yellow-900 border-0 rounded-full px-3">
+                    {plan.badge}
+                  </Badge>
+                )}
+                
+                <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${plan.color} mb-6 flex items-center justify-center`}>
+                  <GraduationCap className="w-7 h-7 text-white" />
+                </div>
+                
+                <h3 className="text-2xl font-bold mb-2">{plan.name}</h3>
+                <div className="mb-6">
+                  <span className="text-5xl font-bold">{plan.price}</span>
+                  {plan.period && <span className="text-lg opacity-80">{plan.period}</span>}
+                </div>
+                
+                <ul className="space-y-3 mb-8 flex-grow">
+                  {plan.features.map((feature, j) => (
+                    <li key={j} className="flex items-start gap-2">
+                      <CheckCircle2 className={`w-5 h-5 mt-0.5 flex-shrink-0 ${
+                        plan.popular ? 'text-white' : 'text-green-600'
+                      }`} />
+                      <span className={plan.popular ? 'text-white/90' : 'text-slate-600'}>
+                        {feature}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+                
+                <motion.div
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <Button
+                    onClick={() => handlePlanSelect(plan.id)}
+                    className={`w-full rounded-full h-12 text-lg ${
+                      plan.popular 
+                        ? 'bg-white text-purple-600 hover:bg-slate-100' 
+                        : 'bg-gradient-to-r from-purple-600 to-blue-600 text-white hover:from-purple-700 hover:to-blue-700'
+                    }`}
+                  >
+                    {plan.isFree ? text.select_plan : text.checkout}
+                  </Button>
+                </motion.div>
+              </Card>
+            </motion.div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
