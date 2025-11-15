@@ -1,0 +1,596 @@
+import React, { useState, useEffect } from "react";
+import { base44 } from "@/api/base44Client";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
+import { Badge } from "@/components/ui/badge";
+import { useSearchParams, useNavigate } from "react-router-dom";
+import { createPageUrl } from "@/utils";
+import {
+  CheckCircle2, XCircle, Trophy, Brain, Zap,
+  Home, RotateCcw, ChevronRight, X, Clock, Heart, Award
+} from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+
+export default function QuizMode() {
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  
+  const topicId = searchParams.get("topicId");
+  const subjectId = searchParams.get("subjectId");
+  const difficulty = searchParams.get("difficulty") || "medium";
+  const isMaturitaTest = searchParams.get("maturita") === "true";
+  
+  const [currentQuestion, setCurrentQuestion] = useState(0);
+  const [selectedAnswer, setSelectedAnswer] = useState(null);
+  const [isAnswered, setIsAnswered] = useState(false);
+  const [correctAnswers, setCorrectAnswers] = useState(0);
+  const [earnedPoints, setEarnedPoints] = useState(0);
+  const [answers, setAnswers] = useState([]);
+  const [isComplete, setIsComplete] = useState(false);
+  const [user, setUser] = useState(null);
+  const [timeLeft, setTimeLeft] = useState(30);
+  const [lives, setLives] = useState(isMaturitaTest ? 999 : 3);
+  const [shuffledQuestions, setShuffledQuestions] = useState([]);
+  const [fallbackUsed, setFallbackUsed] = useState(false);
+
+  const questionCounts = { easy: 10, medium: 20, hard: 40 };
+  const maturitaQuestionCount = 62;
+  const totalPoints = shuffledQuestions.reduce((sum, q) => sum + (q?.points || 1), 0);
+
+  useEffect(() => {
+    const loadUser = async () => {
+      try {
+        const currentUser = await base44.auth.me();
+        setUser(currentUser);
+      } catch (error) {
+        console.error("Error loading user:", error);
+      }
+    };
+    loadUser();
+  }, []);
+
+  const { data: allQuestions = [], isLoading, error } = useQuery({
+    queryKey: ['questions', topicId, subjectId, isMaturitaTest],
+    queryFn: async () => {
+      console.log('🔍 Loading questions...', { topicId, subjectId, isMaturitaTest });
+      
+      const questions = await base44.entities.Question.list();
+      console.log('📊 Total questions in DB:', questions.length);
+      
+      let filtered = [];
+      let usedFallback = false;
+
+      // PRIMARY FILTER
+      if (subjectId && isMaturitaTest) {
+        // Maturita mode - filter by subject + exam questions
+        filtered = questions.filter(q => 
+          q.subjectId === subjectId && 
+          q.is_exam_question === true
+        );
+        console.log('🎓 Maturita exam questions:', filtered.length);
+        
+        // FALLBACK 1: Same subject, non-exam questions
+        if (filtered.length < maturitaQuestionCount) {
+          const fallback1 = questions.filter(q => 
+            q.subjectId === subjectId && 
+            q.is_exam_question !== true
+          );
+          filtered = [...filtered, ...fallback1];
+          usedFallback = true;
+          console.log('⚠️ Fallback 1: Added non-exam questions. Total:', filtered.length);
+        }
+        
+        // FALLBACK 2: Any questions from other subjects
+        if (filtered.length < maturitaQuestionCount) {
+          const fallback2 = questions.filter(q => q.subjectId !== subjectId);
+          filtered = [...filtered, ...fallback2];
+          usedFallback = true;
+          console.log('⚠️ Fallback 2: Added other subject questions. Total:', filtered.length);
+        }
+        
+      } else if (topicId) {
+        // Topic mode - filter by topic
+        filtered = questions.filter(q => q.topicId === topicId);
+        console.log('📖 Topic questions:', filtered.length);
+        
+        // FALLBACK: If not enough, use subject questions
+        if (filtered.length < questionCounts[difficulty]) {
+          const topics = await base44.entities.Topic.list();
+          const topic = topics.find(t => t.id === topicId);
+          if (topic) {
+            const fallback = questions.filter(q => 
+              q.subjectId === topic.subject_id && q.topicId !== topicId
+            );
+            filtered = [...filtered, ...fallback];
+            usedFallback = true;
+            console.log('⚠️ Fallback: Added other topic questions. Total:', filtered.length);
+          }
+        }
+      } else if (subjectId) {
+        // Subject mode (non-maturita)
+        filtered = questions.filter(q => q.subjectId === subjectId);
+        console.log('📚 Subject questions:', filtered.length);
+      }
+
+      if (filtered.length === 0) {
+        console.error('❌ NO QUESTIONS FOUND - Using ALL questions as last resort');
+        filtered = questions;
+        usedFallback = true;
+      }
+
+      // Shuffle questions
+      const shuffled = [...filtered].sort(() => Math.random() - 0.5);
+      
+      // Select appropriate number
+      const count = isMaturitaTest ? maturitaQuestionCount : questionCounts[difficulty];
+      const selected = shuffled.slice(0, Math.min(count, shuffled.length));
+      
+      console.log('✅ Final selected questions:', selected.length, '(requested:', count, ')');
+      
+      // Shuffle answers for each question
+      const withShuffledAnswers = selected.map(q => {
+        if (!q.options || !Array.isArray(q.options)) {
+          console.warn('⚠️ Invalid question options:', q.id);
+          return q;
+        }
+        
+        // Create array of indices
+        const indices = q.options.map((_, i) => i);
+        // Shuffle indices
+        const shuffledIndices = [...indices].sort(() => Math.random() - 0.5);
+        // Create new options array in shuffled order
+        const shuffledOptions = shuffledIndices.map(i => q.options[i]);
+        // Find new index of correct answer
+        const newAnswerIndex = shuffledIndices.indexOf(q.answerIndex);
+        
+        return {
+          ...q,
+          options: shuffledOptions,
+          answerIndex: newAnswerIndex,
+          _originalAnswerIndex: q.answerIndex
+        };
+      });
+      
+      setShuffledQuestions(withShuffledAnswers);
+      setFallbackUsed(usedFallback);
+      
+      return withShuffledAnswers;
+    },
+    enabled: !!(topicId || subjectId),
+    retry: 1,
+  });
+
+  useEffect(() => {
+    if (isAnswered || isComplete || !shuffledQuestions.length || isMaturitaTest) return;
+    
+    const timer = setInterval(() => {
+      setTimeLeft((prev) => {
+        if (prev <= 1) {
+          handleTimeout();
+          return 30;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [isAnswered, isComplete, currentQuestion, shuffledQuestions.length, isMaturitaTest]);
+
+  const saveProgressMutation = useMutation({
+    mutationFn: async (data) => {
+      // Save quiz result
+      await base44.entities.QuizResult.create({
+        subjectId: subjectId || shuffledQuestions[0]?.subjectId,
+        topicIds: topicId ? [topicId] : [],
+        questionIds: shuffledQuestions.map(q => q.id),
+        answers: data.answers,
+        score: data.score,
+        total: totalPoints,
+        mode: isMaturitaTest ? 'maturita_exam' : difficulty,
+        passed: data.passed,
+        percentage: data.percentage
+      });
+      
+      // Update user progress for topic
+      if (topicId) {
+        const existing = await base44.entities.UserProgress.filter({ 
+          topic_id: topicId,
+          created_by: user?.email 
+        });
+        
+        const progressData = {
+          score: data.percentage,
+          xp_points: data.score * 10,
+          total_xp: data.score * 10,
+          completed: data.passed,
+          last_practiced: new Date().toISOString(),
+          streak_days: 1
+        };
+        
+        if (existing.length > 0) {
+          await base44.entities.UserProgress.update(existing[0].id, progressData);
+        } else {
+          await base44.entities.UserProgress.create({
+            ...progressData,
+            topic_id: topicId,
+            subject_id: subjectId || shuffledQuestions[0]?.subjectId
+          });
+        }
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['progress'] });
+    },
+  });
+
+  const handleTimeout = () => {
+    if (isAnswered || !shuffledQuestions[currentQuestion]) return;
+    
+    setIsAnswered(true);
+    setSelectedAnswer(-1);
+    setLives(prev => Math.max(0, prev - 1));
+    
+    setAnswers(prev => [...prev, {
+      questionId: shuffledQuestions[currentQuestion].id,
+      selectedIndex: -1,
+      correct: false
+    }]);
+  };
+
+  const handleAnswerSelect = (optionIndex) => {
+    if (isAnswered || !shuffledQuestions[currentQuestion]) return;
+    
+    setSelectedAnswer(optionIndex);
+    setIsAnswered(true);
+    
+    const currentQ = shuffledQuestions[currentQuestion];
+    const isCorrect = optionIndex === currentQ.answerIndex;
+    const points = isCorrect ? (currentQ.points || 1) : 0;
+    
+    if (isCorrect) {
+      setCorrectAnswers(prev => prev + 1);
+      setEarnedPoints(prev => prev + points);
+    } else {
+      setLives(prev => Math.max(0, prev - 1));
+    }
+    
+    setAnswers(prev => [...prev, {
+      questionId: currentQ.id,
+      selectedIndex: optionIndex,
+      correct: isCorrect
+    }]);
+  };
+
+  const handleNext = () => {
+    if (!isMaturitaTest && lives === 0) {
+      completeQuiz();
+      return;
+    }
+
+    if (currentQuestion + 1 < shuffledQuestions.length) {
+      setCurrentQuestion(prev => prev + 1);
+      setSelectedAnswer(null);
+      setIsAnswered(false);
+      setTimeLeft(30);
+    } else {
+      completeQuiz();
+    }
+  };
+
+  const completeQuiz = async () => {
+    const percentage = Math.round((correctAnswers / shuffledQuestions.length) * 100);
+    const passed = isMaturitaTest 
+      ? earnedPoints >= 24 
+      : earnedPoints >= Math.round(0.38 * totalPoints);
+    
+    await saveProgressMutation.mutateAsync({
+      answers,
+      score: earnedPoints,
+      percentage,
+      passed
+    });
+    
+    setIsComplete(true);
+  };
+
+  // Loading
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 flex items-center justify-center p-4">
+        <Card className="p-12 rounded-3xl shadow-2xl max-w-md text-center">
+          <Brain className="w-16 h-16 mx-auto mb-4 text-purple-600 animate-pulse" />
+          <h2 className="text-2xl font-bold mb-4">
+            {isMaturitaTest ? "Pripravujem maturitný test..." : "Pripravujem test..."}
+          </h2>
+          <div className="animate-spin w-12 h-12 border-4 border-purple-600 border-t-transparent rounded-full mx-auto" />
+        </Card>
+      </div>
+    );
+  }
+
+  // Error or no questions
+  if (error || !shuffledQuestions || shuffledQuestions.length === 0) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 flex items-center justify-center p-4">
+        <Card className="p-12 rounded-3xl shadow-2xl max-w-md text-center">
+          <XCircle className="w-16 h-16 mx-auto mb-4 text-red-500" />
+          <h2 className="text-2xl font-bold mb-4">Nie sú dostupné otázky</h2>
+          <p className="text-slate-600 mb-6">
+            Pre túto tému zatiaľ nie sú importované žiadne otázky. Kontaktujte administrátora.
+          </p>
+          <Button
+            onClick={() => navigate(createPageUrl("Dashboard"))}
+            className="rounded-full bg-gradient-to-r from-purple-600 to-blue-600"
+          >
+            <Home className="w-4 h-4 mr-2" />
+            Späť na Dashboard
+          </Button>
+        </Card>
+      </div>
+    );
+  }
+
+  // Results
+  if (isComplete || (!isMaturitaTest && lives === 0)) {
+    const percentage = Math.round((correctAnswers / shuffledQuestions.length) * 100);
+    const passed = isMaturitaTest 
+      ? earnedPoints >= 24 
+      : earnedPoints >= Math.round(0.38 * totalPoints);
+    
+    const getMaturitaGrade = (points) => {
+      if (points >= 56) return { grade: 1, label: "výborný" };
+      if (points >= 48) return { grade: 2, label: "chválitebný" };
+      if (points >= 40) return { grade: 3, label: "dobrý" };
+      if (points >= 32) return { grade: 4, label: "dostatočný" };
+      if (points >= 24) return { grade: 5, label: "dostatočný" };
+      return { grade: 0, label: "neprospel/a" };
+    };
+    
+    const maturitaResult = isMaturitaTest ? getMaturitaGrade(earnedPoints) : null;
+    
+    return (
+      <motion.div 
+        className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 flex items-center justify-center p-6"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+      >
+        <Card className="p-12 rounded-3xl shadow-2xl max-w-2xl w-full">
+          <motion.div
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ type: "spring", duration: 0.5 }}
+            className="text-center"
+          >
+            {passed ? (
+              <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center">
+                <Trophy className="w-12 h-12 text-white" />
+              </div>
+            ) : (
+              <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-gradient-to-br from-red-400 to-red-600 flex items-center justify-center">
+                <XCircle className="w-12 h-12 text-white" />
+              </div>
+            )}
+            
+            {fallbackUsed && (
+              <Badge className="mb-4 bg-orange-100 text-orange-700 border-0">
+                ⚠️ Použité doplnkové otázky
+              </Badge>
+            )}
+            
+            {isMaturitaTest ? (
+              <>
+                <h1 className="text-4xl font-bold mb-4">
+                  {passed ? "Prešli by ste maturitou! 🎓" : "Neprešli by ste maturitou 😔"}
+                </h1>
+                
+                {maturitaResult && maturitaResult.grade > 0 && (
+                  <div className="mb-6">
+                    <div className="text-7xl font-bold mb-2 bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+                      {maturitaResult.grade}
+                    </div>
+                    <div className="text-xl text-slate-600">{maturitaResult.label}</div>
+                  </div>
+                )}
+                
+                <div className="text-5xl font-bold mb-2">
+                  {earnedPoints} / {totalPoints} bodov
+                </div>
+                <div className="text-lg text-slate-600 mb-8">{percentage}% úspešnosť</div>
+              </>
+            ) : (
+              <>
+                <h1 className="text-4xl font-bold mb-4">
+                  {passed ? "Výborne! 🎉" : lives === 0 ? "Skúsme to znova! 💪" : "Dobrý pokus! 💪"}
+                </h1>
+                <div className="text-6xl font-bold mb-6 bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+                  {percentage}%
+                </div>
+              </>
+            )}
+            
+            <div className="grid grid-cols-3 gap-4 mb-8">
+              <Card className="p-4 bg-slate-50">
+                <div className="text-2xl font-bold text-green-600">{correctAnswers}</div>
+                <div className="text-sm text-slate-600">Správne</div>
+              </Card>
+              <Card className="p-4 bg-slate-50">
+                <div className="text-2xl font-bold text-red-600">{shuffledQuestions.length - correctAnswers}</div>
+                <div className="text-sm text-slate-600">Nesprávne</div>
+              </Card>
+              <Card className="p-4 bg-slate-50">
+                <div className="text-2xl font-bold text-purple-600">+{earnedPoints * 10}</div>
+                <div className="text-sm text-slate-600">XP</div>
+              </Card>
+            </div>
+
+            {!passed && isMaturitaTest && (
+              <div className="bg-red-50 border-2 border-red-200 rounded-2xl p-6 mb-6">
+                <h3 className="font-bold text-red-900 mb-2">
+                  💡 Na prechod potrebujete min. 24 bodov
+                </h3>
+                <p className="text-red-800">
+                  Chýba vám ešte {24 - earnedPoints} bodov. Zopakujte si slabé témy!
+                </p>
+              </div>
+            )}
+
+            <div className="flex gap-4 justify-center">
+              <Button
+                onClick={() => window.location.reload()}
+                variant="outline"
+                className="rounded-full h-12 px-8"
+              >
+                <RotateCcw className="w-4 h-4 mr-2" />
+                Skúsiť znova
+              </Button>
+              <Button
+                onClick={() => navigate(createPageUrl("Dashboard"))}
+                className="rounded-full bg-gradient-to-r from-purple-600 to-blue-600 h-12 px-8"
+              >
+                <Home className="w-4 h-4 mr-2" />
+                Dashboard
+              </Button>
+            </div>
+          </motion.div>
+        </Card>
+      </motion.div>
+    );
+  }
+
+  const currentQ = shuffledQuestions[currentQuestion];
+  if (!currentQ || !currentQ.options) {
+    return null;
+  }
+
+  const progress = ((currentQuestion + 1) / shuffledQuestions.length) * 100;
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 flex flex-col">
+      {/* Progress Bar */}
+      <div className="bg-slate-800/50 backdrop-blur-xl border-b border-white/10">
+        <div className="max-w-5xl mx-auto px-6 py-4">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-4">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => navigate(createPageUrl("Dashboard"))}
+                className="text-white hover:bg-white/10 rounded-xl"
+              >
+                <X className="w-5 h-5" />
+              </Button>
+              <Progress value={progress} className="h-4 bg-slate-700 w-48" />
+            </div>
+            
+            <div className="flex items-center gap-4">
+              {isMaturitaTest ? (
+                <div className="flex items-center gap-2 bg-purple-600/50 px-4 py-2 rounded-full">
+                  <Award className="w-4 h-4 text-white" />
+                  <span className="font-bold text-white">{earnedPoints}/{totalPoints} bodov</span>
+                </div>
+              ) : (
+                <>
+                  <div className="flex items-center gap-2 bg-slate-700/50 px-4 py-2 rounded-full">
+                    <Clock className={`w-4 h-4 ${timeLeft <= 10 ? 'text-red-400' : 'text-white'}`} />
+                    <span className={`font-bold ${timeLeft <= 10 ? 'text-red-400' : 'text-white'}`}>{timeLeft}s</span>
+                  </div>
+                  <div className="flex gap-1">
+                    {[...Array(3)].map((_, i) => (
+                      <Heart 
+                        key={i}
+                        className={`w-6 h-6 ${i < lives ? 'fill-red-500 text-red-500' : 'text-slate-600'}`}
+                      />
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Question */}
+      <div className="flex-1 flex items-center justify-center p-6">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={currentQuestion}
+            initial={{ opacity: 0, x: 100 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -100 }}
+            className="max-w-4xl w-full"
+          >
+            <Card className="p-12 rounded-3xl shadow-2xl bg-white">
+              <div className="text-center mb-8">
+                <Badge className="bg-purple-100 text-purple-700 border-0 px-4 py-1">
+                  Otázka {currentQuestion + 1} z {shuffledQuestions.length}
+                  {currentQ.source_year && ` • ${currentQ.source_year}`}
+                  {currentQ.points > 1 && ` • ${currentQ.points} body`}
+                </Badge>
+              </div>
+
+              <h2 className="text-4xl font-bold text-center mb-12 text-slate-900">
+                {currentQ.q}
+              </h2>
+
+              <div className="space-y-4 mb-8">
+                {currentQ.options.map((option, index) => {
+                  const isSelected = selectedAnswer === index;
+                  const isCorrect = index === currentQ.answerIndex;
+                  const showResult = isAnswered;
+
+                  return (
+                    <motion.button
+                      key={index}
+                      onClick={() => handleAnswerSelect(index)}
+                      disabled={isAnswered}
+                      whileHover={{ scale: isAnswered ? 1 : 1.02 }}
+                      className={`w-full p-6 rounded-2xl border-2 text-left transition-all ${
+                        showResult && isCorrect ? "bg-green-50 border-green-500" :
+                        showResult && isSelected ? "bg-red-50 border-red-500" :
+                        "bg-white border-slate-300 hover:border-purple-500"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                          <div className={`w-12 h-12 rounded-xl ${
+                            showResult && isCorrect ? "bg-green-500 text-white" :
+                            showResult && isSelected ? "bg-red-500 text-white" :
+                            "bg-slate-100 border-2 border-slate-300"
+                          } flex items-center justify-center font-bold text-lg`}>
+                            {String.fromCharCode(65 + index)}
+                          </div>
+                          <span className="text-xl font-semibold">{option}</span>
+                        </div>
+                        {showResult && (isCorrect ? (
+                          <CheckCircle2 className="w-8 h-8 text-green-600" />
+                        ) : isSelected && (
+                          <XCircle className="w-8 h-8 text-red-600" />
+                        ))}
+                      </div>
+                    </motion.button>
+                  );
+                })}
+              </div>
+
+              {isAnswered && (
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                  <Button
+                    onClick={handleNext}
+                    className="w-full h-16 rounded-2xl bg-gradient-to-r from-purple-600 to-blue-600 text-xl font-bold"
+                  >
+                    {!isMaturitaTest && lives === 0 ? "Ukončiť" : 
+                     currentQuestion + 1 === shuffledQuestions.length ? "Dokončiť" : "Ďalej"}
+                    <ChevronRight className="w-6 h-6 ml-2" />
+                  </Button>
+                </motion.div>
+              )}
+            </Card>
+          </motion.div>
+        </AnimatePresence>
+      </div>
+    </div>
+  );
+}
